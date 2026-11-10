@@ -1,0 +1,2023 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>OptiPrint-Finance · Gradientes Conjugados Precondicionado</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+<style>
+:root{
+  --rosa-50:#FFF6FA;
+  --rosa-100:#FFE4EE;
+  --rosa-200:#FFD2E1;
+  --rosa-300:#F9B4CD;
+  --rosa-400:#F28CB2;
+  --rosa-500:#E2669A;
+  --celeste-50:#F3FAFD;
+  --celeste-100:#DDF1F9;
+  --celeste-200:#C6E8F5;
+  --celeste-300:#A7DAEE;
+  --celeste-400:#7CC8E6;
+  --celeste-500:#4FA9CC;
+  --tinta:#2B3B4A;
+  --tinta-2:#5D7080;
+  --tinta-3:#8A9CA9;
+  --linea:#EDF3F7;
+  --blanco:#ffffff;
+  --radio:24px;
+  --sombra:0 16px 44px rgba(116,158,190,.16);
+  --sombra-suave:0 8px 24px rgba(116,158,190,.10);
+  --degradado:linear-gradient(135deg,#F58FB4 0%,#B98BC9 48%,#6EC3E2 100%);
+  --degradado-suave:linear-gradient(135deg,#FFE7F0 0%,#E6F5FB 100%);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:92px}
+body{
+  margin:0;
+  font-family:'Inter',system-ui,-apple-system,sans-serif;
+  color:var(--tinta);
+  line-height:1.68;
+  background:
+    radial-gradient(920px 520px at 8% -12%, #FFDCE9 0%, rgba(255,220,233,0) 62%),
+    radial-gradient(860px 520px at 102% -4%, #CFEDF8 0%, rgba(207,237,248,0) 58%),
+    radial-gradient(700px 700px at 50% 120%, #E7F6FC 0%, rgba(231,246,252,0) 60%),
+    linear-gradient(172deg,#FFFAFC 0%,#F6FBFD 48%,#EDF7FC 100%);
+  background-attachment:fixed;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{font-family:'Poppins',sans-serif;margin:0;line-height:1.25;letter-spacing:-.01em}
+p{margin:.55em 0}
+a{color:var(--celeste-500);text-decoration:none}
+code,pre{font-family:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace}
+
+/* ---------- NAV ---------- */
+.nav{
+  position:sticky;top:0;z-index:60;
+  backdrop-filter:blur(14px);
+  background:rgba(255,252,253,.82);
+  border-bottom:1px solid rgba(249,180,205,.35);
+}
+.nav-in{max-width:1180px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:18px}
+.marca{display:flex;align-items:center;gap:10px;font-family:'Poppins';font-weight:700;font-size:1rem;white-space:nowrap}
+.logo{
+  width:34px;height:34px;border-radius:11px;background:var(--degradado);
+  display:grid;place-items:center;color:#fff;font-weight:800;font-size:.85rem;
+  box-shadow:0 6px 16px rgba(242,140,178,.45);
+}
+.nav-links{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;margin-left:auto}
+.nav-links::-webkit-scrollbar{display:none}
+.nav-links a{
+  font-size:.8rem;font-weight:500;color:var(--tinta-2);padding:7px 12px;border-radius:999px;
+  white-space:nowrap;transition:.2s;
+}
+.nav-links a:hover{background:var(--rosa-100);color:var(--rosa-500)}
+
+/* ---------- LAYOUT ---------- */
+.contenedor{max-width:1180px;margin:0 auto;padding:0 22px}
+section{padding:62px 0 8px}
+.cabecera{display:flex;align-items:flex-start;gap:16px;margin-bottom:26px}
+.num{
+  flex:0 0 auto;width:52px;height:52px;border-radius:16px;background:var(--degradado);
+  color:#fff;font-family:'Poppins';font-weight:700;font-size:1.05rem;
+  display:grid;place-items:center;box-shadow:0 10px 24px rgba(155,150,200,.32);
+}
+.cabecera h2{font-size:clamp(1.35rem,2.6vw,1.85rem);font-weight:700}
+.cabecera .sub{color:var(--tinta-3);font-size:.92rem;margin-top:2px}
+
+.tarjeta{
+  background:rgba(255,255,255,.9);
+  border:1px solid rgba(255,255,255,.95);
+  border-radius:var(--radio);
+  box-shadow:var(--sombra);
+  padding:28px 30px;
+  margin-bottom:22px;
+  transition:transform .3s,box-shadow .3s;
+}
+.tarjeta:hover{box-shadow:0 20px 50px rgba(116,158,190,.20)}
+.tarjeta.rosa{background:linear-gradient(150deg,#FFF7FA 0%,#FFEDF4 100%);border-color:#FFD9E6}
+.tarjeta.celeste{background:linear-gradient(150deg,#F6FCFE 0%,#E7F6FC 100%);border-color:#CFEDF8}
+.tarjeta h3{font-size:1.08rem;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:9px}
+.punto{width:9px;height:9px;border-radius:50%;background:var(--degradado);flex:0 0 auto}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+@media(max-width:900px){.grid2,.grid3,.grid4{grid-template-columns:1fr}}
+
+/* ---------- HERO ---------- */
+.hero{padding:70px 0 26px;position:relative;overflow:hidden}
+.hero::before,.hero::after{content:"";position:absolute;border-radius:50%;filter:blur(60px);z-index:-1}
+.hero::before{width:420px;height:420px;background:#FFD3E3;top:-140px;left:-120px;opacity:.75}
+.hero::after{width:460px;height:460px;background:#CBEAF7;top:-60px;right:-160px;opacity:.8}
+.etiqueta{
+  display:inline-flex;align-items:center;gap:8px;font-size:.76rem;font-weight:600;
+  letter-spacing:.09em;text-transform:uppercase;color:var(--rosa-500);
+  background:#fff;border:1px solid var(--rosa-200);padding:7px 15px;border-radius:999px;
+  box-shadow:var(--sombra-suave);
+}
+.titulo-hero{
+  font-size:clamp(2.1rem,5.4vw,3.6rem);font-weight:800;margin:18px 0 10px;
+  background:linear-gradient(115deg,#E2669A 0%,#A873C4 42%,#3E9FC6 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.sub-hero{font-size:clamp(1rem,1.6vw,1.15rem);color:var(--tinta-2);max-width:820px}
+.chips{display:flex;flex-wrap:wrap;gap:9px;margin-top:22px}
+.chip{
+  font-size:.78rem;font-weight:600;padding:8px 15px;border-radius:999px;
+  background:#fff;border:1px solid var(--celeste-200);color:var(--celeste-500);
+  box-shadow:0 4px 12px rgba(124,200,230,.16);
+}
+.chip.r{background:#fff;border-color:var(--rosa-200);color:var(--rosa-500)}
+.ficha{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-top:30px}
+.ficha-item{background:rgba(255,255,255,.92);border:1px solid #fff;border-radius:18px;padding:16px 18px;box-shadow:var(--sombra-suave)}
+.ficha-item span{display:block;font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;color:var(--tinta-3);font-weight:600}
+.ficha-item strong{font-size:.95rem;font-weight:600;color:var(--tinta)}
+
+/* ---------- BOTONES ---------- */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  border:none;border-radius:999px;padding:12px 24px;font-family:'Inter';
+  font-weight:600;font-size:.9rem;cursor:pointer;transition:.25s;
+}
+.btn-primario{background:var(--degradado);color:#fff;box-shadow:0 10px 24px rgba(242,140,178,.38)}
+.btn-primario:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(124,200,230,.45)}
+.btn-suave{background:#fff;border:1.6px solid var(--rosa-200);color:var(--rosa-500)}
+.btn-suave:hover{background:var(--rosa-50);transform:translateY(-2px)}
+.btn-azul{background:#fff;border:1.6px solid var(--celeste-200);color:var(--celeste-500)}
+.btn-azul:hover{background:var(--celeste-50);transform:translateY(-2px)}
+.btn:active{transform:translateY(0) scale(.985)}
+.fila-botones{display:flex;flex-wrap:wrap;gap:12px;margin-top:18px}
+
+/* ---------- MATRICES ---------- */
+.vec{
+  display:inline-block;border-left:2.5px solid var(--rosa-300);border-right:2.5px solid var(--rosa-300);
+  border-radius:7px;padding:6px 12px;background:#FFFBFD;
+}
+table.mat{border-collapse:collapse;font-size:.86rem;font-variant-numeric:tabular-nums}
+table.mat th{font-size:.74rem;color:var(--tinta-3);font-weight:600;padding:3px 9px;text-align:center}
+table.mat th:first-child{text-align:right}
+table.mat td{padding:4px 9px;text-align:right;font-weight:500;color:var(--tinta)}
+
+/* ---------- TABLAS ---------- */
+.tabla-scroll{overflow-x:auto;border-radius:18px;border:1px solid var(--linea);background:#fff}
+table.tab{width:100%;border-collapse:separate;border-spacing:0;font-size:.87rem;min-width:560px}
+table.tab thead th{
+  background:linear-gradient(135deg,#FFE3EE 0%,#DFF2FA 100%);
+  color:#3D4C5C;font-weight:600;padding:12px 14px;text-align:left;
+  font-size:.79rem;letter-spacing:.03em;text-transform:uppercase;white-space:nowrap;
+}
+table.tab tbody td{padding:11px 14px;border-bottom:1px solid var(--linea);vertical-align:top}
+table.tab tbody tr:last-child td{border-bottom:none}
+table.tab tbody tr:nth-child(even){background:#FCFDFE}
+table.tab tbody tr:hover{background:#FFF7FA}
+.num-celda{font-variant-numeric:tabular-nums;font-weight:600}
+.badge{display:inline-block;padding:3px 11px;border-radius:999px;font-size:.73rem;font-weight:700;letter-spacing:.03em}
+.badge.ok{background:#DFF5E7;color:#2C7A50}
+.badge.no{background:#FFE1E8;color:#C04A6E}
+.badge.info{background:var(--celeste-100);color:var(--celeste-500)}
+.badge.rosa{background:var(--rosa-100);color:var(--rosa-500)}
+
+/* ---------- FORMULAS Y KATEX ---------- */
+.formula{
+  background:linear-gradient(135deg,#FFF6FA 0%,#F2FAFE 100%);
+  border:1px solid #FBE0EC;border-radius:18px;padding:16px 20px;margin:16px 0;
+  overflow-x:auto;font-size:.98rem;
+}
+.formula-simple{
+  background:#fff;border:1px dashed var(--celeste-200);border-radius:14px;
+  padding:20px 16px;margin:16px 0;overflow-x:auto;
+  display: flex; justify-content: center; align-items: center;
+}
+/* Ajuste crucial para los KPI con fórmulas */
+.kpi-formula {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 10px;
+  padding: 10px;
+  background: rgba(255,255,255,0.7);
+  border-radius: 12px;
+  min-height: 65px;
+  width: 100%;
+  overflow-x: auto;
+  font-family: 'KaTeX_Main', serif !important;
+}
+.kpi-formula .katex-display { margin: 0 !important; }
+.katex { font-size: 1.05em !important; }
+
+.pseudo{
+  background:#2E3D4B;color:#F4EAF0;border-radius:18px;padding:20px 22px;overflow-x:auto;
+  font-size:.82rem;line-height:1.85;box-shadow:inset 0 0 0 1px rgba(255,255,255,.07);
+}
+.pseudo .kw{color:#FFB4D0}
+.pseudo .cm{color:#8FA9B8}
+
+/* ---------- PANEL ---------- */
+.grid-matriz{display:grid;grid-template-columns:auto repeat(4,1fr);gap:8px;align-items:center}
+.grid-matriz .cab{font-size:.75rem;font-weight:700;color:var(--tinta-3);text-align:center}
+.grid-matriz .rot{font-size:.76rem;font-weight:600;color:var(--tinta-2);text-align:right;padding-right:4px}
+input.campo{
+  width:100%;padding:9px 10px;border-radius:11px;border:1.5px solid var(--celeste-200);
+  background:#fff;font-family:'Inter';font-size:.86rem;font-weight:600;color:var(--tinta);
+  text-align:center;transition:.2s;font-variant-numeric:tabular-nums;
+}
+input.campo:focus{outline:none;border-color:var(--rosa-300);box-shadow:0 0 0 4px rgba(249,180,205,.28)}
+.controles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-top:20px}
+.control label{display:block;font-size:.76rem;font-weight:700;color:var(--tinta-2);margin-bottom:6px;letter-spacing:.02em}
+select.campo,input.campo.suelto{width:100%;padding:10px 12px;border-radius:12px;border:1.5px solid var(--celeste-200);background:#fff;font-family:'Inter';font-size:.86rem;font-weight:600;color:var(--tinta)}
+select.campo:focus{outline:none;border-color:var(--rosa-300);box-shadow:0 0 0 4px rgba(249,180,205,.28)}
+
+.alerta{
+  display:none;background:linear-gradient(135deg,#FFE9F0,#FFF3F7);
+  border-left:5px solid var(--rosa-400);border-radius:14px;padding:14px 18px;margin-top:18px;
+  font-size:.88rem;color:#A03A60;
+}
+.alerta.visible{display:block;animation:aparecer .35s ease}
+.okbox{
+  display:none;background:linear-gradient(135deg,#E7F8EF,#F1FBF6);
+  border-left:5px solid #6FC79A;border-radius:14px;padding:14px 18px;margin-top:18px;
+  font-size:.88rem;color:#2C7A50;
+}
+.okbox.visible{display:block;animation:aparecer .35s ease}
+@keyframes aparecer{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ---------- KPIs ---------- */
+.kpi{background:#fff;border:1px solid var(--linea);border-radius:18px;padding:16px 18px;box-shadow:var(--sombra-suave)}
+.kpi > span{display:block;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--tinta-3);font-weight:700;text-align: center;}
+.kpi strong{display:block;font-family:'Poppins';font-size:1.35rem;font-weight:700;color:var(--tinta);margin-top:3px;font-variant-numeric:tabular-nums; text-align: center;}
+.kpi.rosa strong{color:var(--rosa-500)}
+.kpi.celeste strong{color:var(--celeste-500)}
+
+canvas{width:100%;height:310px;display:block}
+.lienzo-caja{background:#fff;border:1px solid var(--linea);border-radius:18px;padding:14px 16px 8px;box-shadow:var(--sombra-suave)}
+
+.leyenda{display:flex;flex-wrap:wrap;gap:16px;font-size:.79rem;color:var(--tinta-2);margin-top:6px}
+.leyenda i{display:inline-block;width:12px;height:12px;border-radius:4px;margin-right:6px;vertical-align:-1px}
+
+.lista-check{list-style:none;padding:0;margin:10px 0}
+.lista-check li{padding:7px 0 7px 30px;position:relative;font-size:.9rem}
+.lista-check li::before{
+  content:"✓";position:absolute;left:0;top:5px;width:20px;height:20px;border-radius:50%;
+  background:var(--celeste-100);color:var(--celeste-500);font-size:.72rem;font-weight:800;
+  display:grid;place-items:center;
+}
+.lista-check li.r::before{content:"◆";background:var(--rosa-100);color:var(--rosa-500);font-size:.6rem}
+
+.mini-lista{font-size:.79rem;line-height:1.55;color:var(--tinta-2);font-variant-numeric:tabular-nums}
+.mini-lista b{color:var(--tinta);font-weight:600}
+
+footer{
+  margin-top:60px;padding:38px 0;text-align:center;font-size:.83rem;color:var(--tinta-3);
+  border-top:1px solid rgba(249,180,205,.35);background:rgba(255,255,255,.55);
+}
+.ref{font-size:.86rem;color:var(--tinta-2);padding-left:22px;margin:.5em 0}
+.cita{background:#fff;border-left:4px solid var(--celeste-300);border-radius:0 14px 14px 0;padding:12px 18px;margin:12px 0;font-size:.88rem;color:var(--tinta-2)}
+</style>
+</head>
+<body>
+
+<!-- ==================== NAV ==================== -->
+<nav class="nav">
+  <div class="nav-in">
+    <div class="marca"><div class="logo">OF</div> OptiPrint-Finance</div>
+    <div class="nav-links">
+      <a href="#inicio">Inicio</a>
+      <a href="#caso">Caso</a>
+      <a href="#modelo">Modelo</a>
+      <a href="#panel">Panel</a>
+      <a href="#escenarios">Escenarios</a>
+      <a href="#referencia">Referencia</a>
+      <a href="#comparacion">GCP vs GC</a>
+      <a href="#errores">Errores</a>
+      <a href="#tabla-comparativa">Comparativa</a>
+      <a href="#qa">QA</a>
+      <a href="#conclusiones">Conclusiones</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ==================== 1. INICIO ==================== -->
+<section id="inicio" class="hero">
+  <div class="contenedor">
+    <span class="etiqueta">◆ Métodos Numéricos · Desafío Académico</span>
+    <h1 class="titulo-hero">OptiPrint-Finance</h1>
+    <p class="sub-hero">
+      Plataforma web SaaS de optimización financiera y asignación de costos operativos para una
+      imprenta digital y tienda de comercio electrónico, resuelta mediante el
+      <strong>Método de Gradientes Conjugados Precondicionado (GCP)</strong>.
+    </p>
+    <div class="chips">
+      <span class="chip r">n = 4 variables · 4 ecuaciones</span>
+      <span class="chip">Tolerancia 10⁻⁶</span>
+      <span class="chip r">3 escenarios obligatorios</span>
+      <span class="chip">Cholesky + GCP + GC</span>
+      <span class="chip r">Módulo QA integrado</span>
+    </div>
+
+    <!-- ✏️ EDITA AQUÍ TUS DATOS -->
+    <div class="ficha">
+      <div class="ficha-item"><span>Estudiante</span><strong>MARIAL GABRIELA RODAS CHAMBI</strong></div>
+      <div class="ficha-item"><span>Carrera</span><strong>Informática — UMSA</strong></div>
+      <div class="ficha-item"><span>Mención</span><strong>Desarrollo de Sistemas e Innovación Tecnológica</strong></div>
+      <div class="ficha-item"><span>Materia</span><strong>Métodos Numéricos</strong></div>
+      <div class="ficha-item"><span>Docente</span><strong>BRIGIDA ALEXANDRA CARVAJAL BLANCO 
+</strong></div>
+      <div class="ficha-item"><span>Gestión</span><strong>2026</strong></div>
+    </div>
+
+    <div class="tarjeta" style="margin-top:30px">
+      <h3><span class="punto"></span>Síntesis del caso</h3>
+      <p>
+        OptiPrint es una imprenta digital que produce stickers, etiquetas adhesivas, gigantografías y
+        material publicitario, y que además opera una tienda de comercio electrónico con pedidos
+        personalizados las 24 horas. Cada mes la gerencia debe repartir un presupuesto limitado entre
+        cuatro rubros que compiten entre sí: <strong>insumos de impresión</strong>,
+        <strong>logística de distribución</strong>, <strong>infraestructura de pagos y plataforma web</strong>
+        y <strong>marketing digital</strong>. Como los rubros están acoplados (más insumos exigen más
+        logística, más publicidad genera más transacciones y por tanto más comisión por pasarela), el
+        reparto se modela como un sistema lineal simétrico y definido positivo
+        \(Ax=b\), donde \(x\) es el vector de presupuestos y \(b\) el rendimiento meta exigido a cada área.
+      </p>
+      <p>
+        La plataforma permite editar la matriz de costos cruzados \(A\) y el vector \(b\), resolver el
+        sistema por un método directo (referencia), ejecutar GCP y GC sin precondicionar, comparar
+        convergencias, medir errores por variable y analizar el condicionamiento en tres escenarios:
+        <em>Ideal</em>, <em>Bajo estrés financiero</em> y <em>Mal condicionado</em>.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 2. CASO DE ESTUDIO ==================== -->
+<section id="caso">
+  <div class="contenedor">
+    <div class="cabecera">
+      <div class="num">02</div>
+      <div>
+        <h2>Caso de estudio y justificación del modelo</h2>
+        <p class="sub">Contexto financiero, procedencia de los datos y arquitectura de la solución</p>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="tarjeta">
+        <h3><span class="punto"></span>Contexto financiero</h3>
+        <p>
+          OptiPrint factura en dos líneas complementarias: <strong>producción física</strong> (impresión
+          digital bajo pedido) y <strong>venta electrónica</strong> (tienda en línea con personalización).
+          El presupuesto mensual es limitado y cada área reporta al ERP su propio consumo, pero los
+          consumos <em>no son independientes</em>: un pedido de stickers requiere sustrato adhesivo,
+          embalaje, despacho por última milla, una transacción en la pasarela de pagos y, muchas veces,
+          proviene de una campaña pagada en redes sociales.
+        </p>
+        <p>
+          Por eso el problema de asignación no puede resolverse rubro por rubro. Se plantea un
+          <strong>modelo de consumo cruzado tipo insumo-producto (Leontief)</strong>: cada área \(i\)
+          consume recursos propios e inducidos por las otras áreas, de modo que el requerimiento total
+          \(b_i\) se cubre con la combinación de presupuestos \(x_j\).
+        </p>
+      </div>
+
+      <div class="tarjeta celeste">
+        <h3><span class="punto"></span>Procedencia de los datos</h3>
+        <p>
+          Los coeficientes se obtuvieron del módulo de costos del ERP de OptiPrint (registros de los
+          últimos 12 meses), normalizados como <em>costo inducido por unidad monetaria invertida</em>.
+          Los valores fueron anonimizados y escalados para el ejercicio académico: <strong>no
+          corresponden a una empresa real</strong>, pero conservan la estructura de dependencia
+          observada en el sector de imprentas digitales con canal e-commerce.
+        </p>
+        <ul class="lista-check">
+          <li>Módulo de compras → insumos y materia prima</li>
+          <li>Módulo de logística → envíos y última milla</li>
+          <li>Módulo de TI → pasarelas de pago y hosting</li>
+          <li class="r">Módulo de marketing → pauta digital y adquisición</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="tarjeta">
+      <h3><span class="punto"></span>Aporte específico de la mención: arquitectura del software</h3>
+      <div class="grid3" style="margin-top:14px">
+        <div class="kpi celeste"><span>Capa de presentación</span><strong style="font-size:.95rem;font-family:'Inter';font-weight:600">HTML5 + CSS3 + JS</strong></div>
+        <div class="kpi rosa"><span>Motor numérico</span><strong style="font-size:.95rem;font-family:'Inter';font-weight:600">Módulos independientes</strong></div>
+        <div class="kpi"><span>Control de calidad</span><strong style="font-size:.95rem;font-family:'Inter';font-weight:600">QA automatizado</strong></div>
+      </div>
+      <p style="margin-top:16px">
+        La plataforma se construyó con <strong>componentes web nativos</strong> y un motor numérico
+        desacoplado (utilidades de álgebra lineal: producto matriz-vector, factorización de Cholesky,
+        sustitución triangular, autovalores por rotaciones de Jacobi y número de condición). Sobre ese
+        motor se apoyan tres capas: (i) la <em>capa de validación</em>, que verifica simetría y
+        definición positiva antes de ejecutar cualquier algoritmo; (ii) la <em>capa de resolución</em>,
+        que ejecuta el método directo de referencia y los métodos iterativos GC/GCP; y (iii) la
+        <em>capa de control de calidad</em>, que corre pruebas automáticas sobre escenarios, matrices
+        inválidas, edición dinámica y ganancia de precondicionamiento. Toda la interfaz es reactiva:
+        al modificar un coeficiente se recalculan soluciones, errores, tablas y gráficos.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 3. MODELO ==================== -->
+<section id="modelo">
+  <div class="contenedor">
+    <div class="cabecera">
+      <div class="num">03</div>
+      <div>
+        <h2>Formulación matemática del sistema \(Ax=b\)</h2>
+        <p class="sub">Variables, interpretación de coeficientes, simetría y definición positiva</p>
+      </div>
+    </div>
+
+    <div class="tarjeta">
+      <h3><span class="punto"></span>Definición de las variables (n = 4)</h3>
+      <div class="tabla-scroll" style="margin-top:14px">
+        <table class="tab">
+          <thead>
+            <tr><th>Variable</th><th>Significado financiero</th><th>Unidad</th><th>Origen del dato</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><b>\(x_1\)</b></td><td>Presupuesto de inversión en insumos de impresión y materia prima (papel adhesivo, sustratos, tintas).</td><td>miles de USD</td><td>Módulo de compras</td></tr>
+            <tr><td><b>\(x_2\)</b></td><td>Presupuesto asignado a la logística de distribución, envíos y última milla de los pedidos del e-commerce.</td><td>miles de USD</td><td>Módulo de logística</td></tr>
+            <tr><td><b>\(x_3\)</b></td><td>Presupuesto operativo de la infraestructura de pasarelas de pago y mantenimiento de la plataforma web.</td><td>miles de USD</td><td>Módulo de TI</td></tr>
+            <tr><td><b>\(x_4\)</b></td><td>Presupuesto para pautas publicitarias digitales y marketing de adquisición de clientes.</td><td>miles de USD</td><td>Módulo de marketing</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="tarjeta rosa">
+      <h3><span class="punto"></span>El sistema de ecuaciones</h3>
+      <div class="formula">
+        \[
+        \underbrace{\begin{pmatrix}
+        a_{11} & a_{12} & a_{13} & a_{14}\\
+        a_{21} & a_{22} & a_{23} & a_{24}\\
+        a_{31} & a_{32} & a_{33} & a_{34}\\
+        a_{41} & a_{42} & a_{43} & a_{44}
+        \end{pmatrix}}_{A}
+        \underbrace{\begin{pmatrix} x_1\\x_2\\x_3\\x_4 \end{pmatrix}}_{x}
+        =
+        \underbrace{\begin{pmatrix} b_1\\b_2\\b_3\\b_4 \end{pmatrix}}_{b}
+        \]
+      </div>
+      <p><strong>Interpretación de los coeficientes \(a_{ij}\):</strong> el coeficiente \(a_{ij}\) representa
+      el consumo del área \(i\) (en miles de USD) inducido por cada unidad monetaria asignada al área \(j\).
+      La diagonal \(a_{ii}\) es la <em>eficiencia propia</em> del rubro (cuánto consume el área de sí misma
+      por unidad invertida); los coeficientes fuera de la diagonal son los <em>costos cruzados</em> o
+      interferencias operativas entre áreas. El vector \(b_i\) es el <strong>requerimiento total</strong>
+      que la gerencia exige cubrir al área \(i\) en el período.</p>
+      <p><strong>Simetría (\(A=A^{\top}\)):</strong> los costos operativos entre pares de áreas son
+      compartidos, por lo que el gasto que logística induce en insumos es el mismo que insumos induce en
+      logística. Formalmente \(a_{ij}=a_{ji}\) para todo \(i,j\), de donde \(A=A^{\top}\). Esta propiedad es
+      requisito del método GCP porque garantiza que la forma cuadrática asociada sea simétrica.</p>
+      <p><strong>Definición positiva (\(x^{\top}Ax>0,\ \forall x\neq 0\)):</strong> se verifica por dos vías
+      independientes: (i) <em>Criterio de Sylvester</em>, exigiendo que todos los menores principales
+      \(\Delta_1,\Delta_2,\Delta_3,\Delta_4\) sean estrictamente positivos; (ii) <em>autovalores</em>,
+      exigiendo \(\lambda_i(A)>0\) para todo \(i\). La verificación se ejecuta en vivo con la matriz
+      cargada en el panel:</p>
+
+      <div id="verificacion" class="tarjeta celeste" style="margin-top:16px"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 4. PANEL ==================== -->
+<section id="panel">
+  <div class="contenedor">
+    <div class="cabecera">
+      <div class="num">04</div>
+      <div>
+        <h2>Panel de entrada de datos</h2>
+        <p class="sub">Edición interactiva de \(A\), \(b\), \(x_0\), tolerancia y precondicionador</p>
+      </div>
+    </div>
+
+    <div class="tarjeta">
+      <div class="grid2">
+        <div>
+          <h3><span class="punto"></span>Matriz de costos cruzados \(A\) (4×4)</h3>
+          <div id="gridA" class="grid-matriz" style="margin-top:14px"></div>
+        </div>
+        <div>
+          <h3><span class="punto"></span>Vector de requerimientos \(b\)</h3>
+          <div id="gridb" class="grid-matriz" style="margin-top:14px"></div>
+          <h3 style="margin-top:22px"><span class="punto"></span>Vector inicial \(x_0\)</h3>
+          <div id="gridx0" class="grid-matriz" style="margin-top:14px"></div>
+        </div>
+      </div>
+
+      <div class="controles">
+        <div class="control">
+          <label>Tolerancia relativa</label>
+          <input id="inpTol" class="campo suelto" type="text" value="1e-6">
+        </div>
+        <div class="control">
+          <label>Iteraciones máximas</label>
+          <input id="inpNmax" class="campo suelto" type="number" value="200" min="1" max="2000">
+        </div>
+        <div class="control">
+          <label>Precondicionador \(M\)</label>
+          <select id="selPrecond" class="campo">
+            <option value="jacobi">Jacobi (diagonal)</option>
+            <option value="ssor">SSOR (ω)</option>
+            <option value="ic0">Cholesky Incompleto IC(0)</option>
+          </select>
+        </div>
+        <div class="control">
+          <label>Parámetro ω (solo SSOR)</label>
+          <input id="inpOmega" class="campo suelto" type="number" value="1" step="0.1" min="0.1" max="1.9">
+        </div>
+      </div>
+
+      <div class="fila-botones">
+        <button class="btn btn-primario" id="btnResolver">▶ Resolver sistema</button>
+        <button class="btn btn-suave" id="btnIdeal">Cargar escenario Ideal</button>
+        <button class="btn btn-azul" id="btnEstres">Cargar escenario Bajo estrés</button>
+        <button class="btn btn-azul" id="btnMal">Cargar escenario Mal condicionado</button>
+        <button class="btn btn-suave" id="btnReset">↺ Restablecer</button>
+      </div>
+
+      <div id="alerta" class="alerta"></div>
+      <div id="okbox" class="okbox"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 5. ESCENARIOS ==================== -->
+<section id="escenarios">
+  <div class="contenedor">
+    <div class="cabecera">
+      <div class="num">05</div>
+      <div>
+        <h2>Los tres escenarios obligatorios</h2>
+        <p class="sub">Mismas variables y misma estructura; cambian los coeficientes y/o los términos independientes</p>
+      </div>
+    </div>
+
+    <div class="grid3">
+      <div class="tarjeta celeste">
+        <h3><span class="punto"></span>Escenario 1 · Ideal</h3>
+        <p><strong>Situación financiera estable y equilibrada.</strong> Los costos cruzados son moderados,
+        la matriz está bien condicionada (\(\kappa(A)\) bajo) y el reparto presupuestario es estable frente
+        a pequeñas variaciones de los datos.</p>
+        <p style="font-size:.86rem;color:var(--tinta-2)">Uso esperado: línea base de comparación. Tanto GC
+        como GCP deben converger en pocas iteraciones y sin diferencias significativas.</p>
+        <button class="btn btn-azul" data-esc="ideal">Ejecutar escenario</button>
+      </div>
+      <div class="tarjeta rosa">
+        <h3><span class="punto"></span>Escenario 2 · Bajo estrés financiero</h3>
+        <p><strong>Perturbación por inflación de insumos y alza de costos logísticos.</strong> Se incrementan
+        los coeficientes asociados a materia prima y distribución, y se ajusta a la baja el rendimiento meta
+        \(b\) porque el poder de compra del presupuesto se reduce.</p>
+        <p style="font-size:.86rem;color:var(--tinta-2)">Uso esperado: observar cómo el modelo redistribuye el
+        presupuesto hacia el rubro que absorbe la mayor presión de costos.</p>
+        <button class="btn btn-primario" data-esc="estres">Ejecutar escenario</button>
+      </div>
+      <div class="tarjeta">
+        <h3><span class="punto"></span>Escenario 3 · Mal condicionado</h3>
+        <p><strong>Desproporción de escalas entre módulos del ERP y fuerte interdependencia.</strong> El módulo
+        de e-commerce exporta sus costos en una escala distinta a la del módulo de imprenta, generando
+        coeficientes con órdenes de magnitud muy distintos (mal escalamiento diagonal) y un
+        \(\kappa(A)\gg 1\).</p>
+        <p style="font-size:.86rem;color:var(--tinta-2)">Uso esperado: evidenciar la ganancia del
+        precondicionador. GC simple converge lento; GCP con IC(0) converge en muy pocas iteraciones.</p>
+        <button class="btn btn-suave" data-esc="mal">Ejecutar escenario</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 6. REFERENCIA ==================== -->
+<section id="referencia">
+  <div class="contenedor">
+    <div class="cabecera">
+      <div class="num">06</div>
+      <div>
+        <h2>Solución numérica de referencia (método directo)</h2>
+        <p class="sub">Factorización de Cholesky \(A=LL^{\top}\) y sustitución triangular</p>
+      </div>
+    </div>
+
+    <div class="tarjeta">
+      <p>Como \(A\) es simétrica y definida positiva, se aplica la <strong>factorización de Cholesky</strong>
+      \(A=LL^{\top}\) con \(L\) triangular inferior de diagonal positiva. El sistema se resuelve en dos etapas:
+      \(Ly=b\) (sustitución hacia adelante) y \(L^{\top}x=y\) (sustitución hacia atrás). El vector obtenido se
+      denomina <em>solución numérica de referencia</em> y se clasifica formalmente como
+      <em>solución exacta</em> del sistema, ya que el método es directo y no iterativo.</p>
+
+      <div class="formula">
+        \[ A = LL^{\top},\qquad L_{ii}=\sqrt{a_{ii}-\sum_{k=1}^{i-1}L_{ik}^{2}},\qquad
+        L_{ij}=\frac{1}{L_{jj}}\Big(a_{ij}-\sum_{k=1}^{j-1}L_{ik}L_{jk}\Big),\quad j<i \]
+      </div>
+
+      <div class="grid2" style="margin-top:20px;align-items:start">
+        <div>
+          <h3><span class="punto"></span>Factor \(L\)</h3>
+          <div id="resL" style="margin-top:12px"></div>
+        </div>
+        <div>
+          <h3><span class="punto"></span>Vector solución \(x_{ref}\)</h3>
+          <div id="resXref" style="margin-top:12px"></div>
+          <div id="resResiduo" style="margin-top:16px"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 7. GCP vs GC ==================== -->
+<section id="comparacion">
+  <div class="contenedor">
+    <div class="cabecera">
+      <div class="num">07</div>
+      <div>
+        <h2>Gradientes Conjugados Precondicionado vs. GC simple</h2>
+        <p class="sub">Algoritmo de Suñagua (2020), contraste de convergencia y diagnóstico</p>
+      </div>
+    </div>
+
+    <div class="tarjeta">
+      <h3><span class="punto"></span>El algoritmo (Suñagua, 2020)</h3>
+      <p>El método de Gradientes Conjugados Precondicionado resuelve \(Ax=b\) cuando \(A\) es simétrica y
+      definida positiva, transformando el sistema original en uno equivalente con mejor condicionamiento.
+      La idea central es sustituir el sistema \(Ax=b\) por \(M^{-1}Ax=M^{-1}b\), donde \(M\) es una matriz
+      simétrica definida positiva que aproxima a \(A\) pero cuyo sistema asociado es mucho más fácil de
+      resolver (idealmente diagonal o triangular).</p>
+
+      <div class="formula" style="text-align: center;">
+        \[
+        \begin{aligned}
+        & r_0 = b - Ax_0, \qquad z_0 = M^{-1}r_0, \qquad p_0 = z_0\\[4pt]
+        & \alpha_k = \frac{r_k^{\top} z_k}{p_k^{\top} A\,p_k}\\[4pt]
+        & x_{k+1} = x_k + \alpha_k\,p_k\\[4pt]
+        & r_{k+1} = r_k - \alpha_k\,A\,p_k\\[4pt]
+        & z_{k+1} = M^{-1}r_{k+1}\\[4pt]
+        & \beta_k = \frac{r_{k+1}^{\top} z_{k+1}}{r_k^{\top} z_k}\\[4pt]
+        & p_{k+1} = z_{k+1} + \beta_k\,p_k
+        \end{aligned}
+        \]
+      </div>
+
+      <p><strong>Criterio de parada:</strong> \(\dfrac{\lVert r_k\rVert_2}{\lVert b\rVert_2}<10^{-6}\)
+      o hasta alcanzar \(N_{\max}\) iteraciones. El algoritmo de <em>Gradientes Conjugados simple</em> (GC)
+      es exactamente el mismo procedimiento tomando \(M=I\), es decir, \(z_k=r_k\); se ejecuta en paralelo
+      únicamente como elemento de contraste.</p>
+
+      <pre class="pseudo"><code><span class="cm">// Gradientes Conjugados Precondicionado (Suñagua, 2020)</span>
+Entrada: A (simétrica definida positiva), b, x₀, M, tol, Nmáx
+r₀ ← b − A·x₀ ;  z₀ ← M⁻¹·r₀ ;  p₀ ← z₀ ;  k ← 0
+Mientras ‖r_k‖₂/‖b‖₂ ≥ tol  y  k &lt; Nmáx:
+    α_k ← (r_kᵀ·z_k) / (p_kᵀ·A·p_k)
+    x_{k+1} ← x_k + α_k·p_k
+    r_{k+1} ← r_k − α_k·A·p_k
+    z_{k+1} ← M⁻¹·r_{k+1}
+    β_k ← (r_{k+1}ᵀ·z_{k+1}) / (r_kᵀ·z_k)
+    p_{k+1} ← z_{k+1} + β_k·p_k
+    k ← k + 1
+Retornar x_k, k, historial de residuos relativos</code></pre>
+
+      <p style="margin-top:18px"><strong>¿Por qué precondicionar acelera la convergencia?</strong> El error
+      del método de gradientes conjugados satisface la cota:</p>
+      
+      <div class="formula-simple" style="padding: 24px;">
+        \[
+        \frac{\| x_k - x^* \|_A}{\| x_0 - x^* \|_A} \le 2 \left( \frac{\sqrt{\kappa} - 1}{\sqrt{\kappa} + 1} \right)^k, \qquad \kappa = \kappa(M^{-1}A)
+        \]
+      </div>
+      
+      <p>Si \(M\) aproxima bien a \(A\), entonces \(\kappa(M^{-1}A)\ll\kappa(A)\) y la cota se contrae mucho más
+      rápido, por lo que se requieren menos iteraciones para alcanzar la misma tolerancia.</p>
+
+      <h3 style="margin-top:26px"><span class="punto"></span>Precondicionadores implementados</h3>
+      
+      <!-- CORRECCIÓN CRÍTICA DE LAS FÓRMULAS EN LOS KPIs -->
+      <div class="grid3" style="margin-top:14px">
+        <div class="kpi celeste">
+          <span>Jacobi</span>
+          <div class="kpi-formula">\[ M = \text{diag}(a_{11}, a_{22}, \dots, a_{nn}) \]</div>
+        </div>
+        <div class="kpi rosa">
+          <span>SSOR</span>
+          <div class="kpi-formula">\[ M = \frac{(D+\omega L)D^{-1}(D+\omega U)}{\omega(2-\omega)} \]</div>
+        </div>
+        <div class="kpi">
+          <span>IC(0)</span>
+          <div class="kpi-formula">\[ M = \tilde{L}\tilde{L}^{\top} \]</div>
+        </div>
+      </div>
+      
+    </div>
+
+    <div class="tarjeta celeste">
+      <h3><span class="punto"></span>Diagnóstico comparativo de la ejecución actual</h3>
+      <div id="resDiagnostico" style="margin-top:14px"></div>
+    </div>
+
+    <div class="tarjeta">
+      <h3><span class="punto"></span>Curvas de convergencia (residuo relativo vs. iteración)</h3>
+      <div class="lienzo-caja" style="margin-top:14px">
+        <canvas id="cvConvergencia"></canvas>
+      </div>
+      <div class="leyenda">
+        <span><i style="background:#F28CB2"></i>GC sin precondicionar</span>
+        <span><i style="background:#4FA9CC"></i>GCP precondicionado</span>
+        <span><i style="background:#C6E8F5"></i>Línea de tolerancia</span>
+        <span style="color:var(--tinta-3)">Escala vertical logarítmica (base 10)</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 8. ERRORES ==================== -->
+<section id="errores">
+  <div class="contenedor">
+    <div class="cabecera">
+      <div class="num">08</div>
+      <div>
+        <h2>Análisis de errores y condicionamiento</h2>
+        <p class="sub">Error absoluto, relativo y porcentual por variable · residuo global · κ(A) y κ(M⁻¹A)</p>
+      </div>
+    </div>
+
+    <div class="tarjeta">
+      <h3><span class="punto"></span>Definiciones utilizadas</h3>
+      <div class="formula" style="text-align: center;">
+        \[
+        E_{a,i}=\bigl|x_{ref,i}-x_{GCP,i}\bigr|,\qquad
+        E_{r,i}=\frac{E_{a,i}}{|x_{ref,i}|},\qquad
+        E_{p,i}=E_{r,i}\times 100\%
+        \]
+      </div>
+      <p style="font-size:.88rem;color:var(--tinta-2)">
+        Si \(x_{ref,i}=0\), el error relativo se declara <em>no definido</em> para esa componente.
+        El residuo relativo global se calcula como
+        \(\lVert b-Ax_{GCP}\rVert_2/\lVert b\rVert_2\) (válido cuando \(\lVert b\rVert_2\neq 0\)).
+      </p>
+    </div>
+
+    <div class="tarjeta">
+      <h3><span class="punto"></span>Tabla de errores por componente</h3>
+      <div id="tablaErrores" style="margin-top:14px"></div>
+    </div>
+
+    <div class="grid2">
+      <div class="tarjeta celeste">
+        <h3><span class="punto"></span>Número de condición</h3>
+        <div id="resCondicion" style="margin-top:12px"></div>
+        <div class="formula-simple" style="margin-top:14px">
+          \[ \kappa(A)=\lVert A\rVert_2\lVert A^{-1}\rVert_2=\frac{\lambda_{\max}(A)}{\lambda_{\min}(A)} \]
+        </div>
+      </div>
+      <div class="tarjeta rosa">
+        <h3><span class="punto"></span>Error porcentual por variable</h3>
+        <div class="lienzo-caja" style="margin-top:12px;padding:10px">
+          <canvas id="cvErrores" style="height:250px"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 9. TABLA COMPARATIVA ==================== -->
+<section id="tabla-comparativa">
+  <div class="contenedor">
+    <div class="cabecera">
+      <div class="num">09</div>
+      <div>
+        <h2>Tabla comparativa obligatoria de los tres escenarios</h2>
+        <p class="sub">Resultados consolidados calculados automáticamente al cargar la página</p>
+      </div>
+    </div>
+
+    <div class="tarjeta">
+      <div id="tablaComparativa"></div>
+      <div class="lienzo-caja" style="margin-top:22px">
+        <canvas id="cvIteraciones" style="height:290px"></canvas>
+      </div>
+      <div class="leyenda">
+        <span><i style="background:#F28CB2"></i>Iteraciones GC (sin precondicionar)</span>
+        <span><i style="background:#4FA9CC"></i>Iteraciones GCP (precondicionado)</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 10. QA ==================== -->
+<section id="qa">
+  <div class="contenedor">
+    <div class="cabecera">
+      <div class="num">10</div>
+      <div>
+        <h2>Módulo de pruebas de software (QA)</h2>
+        <p class="sub">Casos de prueba con Entrada · Resultado Esperado · Resultado Obtenido · Conclusión</p>
+      </div>
+    </div>
+
+    <div class="tarjeta">
+      <p>Las pruebas se ejecutan en vivo sobre el mismo motor numérico de la plataforma. Al presionar el
+      botón, cada caso se corre realmente y se registra su resultado; no son resultados escritos a mano.</p>
+      <div class="fila-botones" style="margin-bottom:18px">
+        <button class="btn btn-primario" id="btnQA">▶ Ejecutar batería de pruebas</button>
+      </div>
+      <div id="tablaQA"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 11. CONCLUSIONES ==================== -->
+<section id="conclusiones">
+  <div class="contenedor">
+    <div class="cabecera">
+      <div class="num">11</div>
+      <div>
+        <h2>Conclusiones y referencias</h2>
+        <p class="sub">Interpretación técnica y financiera de los resultados</p>
+      </div>
+    </div>
+
+    <div class="tarjeta">
+      <h3><span class="punto"></span>Interpretación matemática</h3>
+      <ul class="lista-check">
+        <li>La matriz de costos cruzados de OptiPrint resultó simétrica y definida positiva en los tres
+        escenarios, condición que se verificó con el criterio de Sylvester y con el signo de los
+        autovalores, y que además quedó confirmada por el éxito de la factorización de Cholesky.</li>
+        <li>El método directo de Cholesky proporcionó la solución de referencia con residuos del orden
+        del error de redondeo (\(\sim 10^{-15}\)), lo que valida su uso como patrón de comparación.</li>
+        <li>El GCP reprodujo la solución de referencia con errores absolutos prácticamente nulos,
+        confirmando la correctitud de la implementación del algoritmo de Suñagua (2020).</li>
+        <li class="r">En el escenario mal condicionado la diferencia entre GC y GCP se hace evidente: el
+        número de condición de la matriz precondicionada es varios órdenes de magnitud menor que el de
+        la matriz original, y el número de iteraciones se reduce drásticamente.</li>
+      </ul>
+    </div>
+
+    <div class="tarjeta rosa">
+      <h3><span class="punto"></span>Interpretación financiera</h3>
+      <ul class="lista-check">
+        <li>En el escenario ideal el reparto presupuestario es estable: pequeñas variaciones en los
+        requerimientos no alteran significativamente la asignación, lo que permite planificar con
+        holgura.</li>
+        <li>Bajo estrés financiero, el alza de costos de insumos y logística presiona a la baja todos
+        los presupuestos, y el modelo redistribuye los recursos priorizando el rubro con mayor
+        eficiencia propia.</li>
+        <li class="r">En el escenario mal condicionado se observa el riesgo operativo real: una pequeña
+        variación en un requerimiento puede producir un cambio desproporcionado en el presupuesto
+        asignado. Por eso, en la práctica, la gerencia debe normalizar las escalas del ERP y usar
+        precondicionamiento antes de confiar en la solución.</li>
+      </ul>
+    </div>
+
+    <div class="tarjeta">
+      <h3><span class="punto"></span>Referencias bibliográficas</h3>
+      <div class="cita">Suñagua S., P. (2020). <em>Método de Gradientes Conjugados Precondicionado</em>.
+      Revista Boliviana de Matemática – UMSA, 04, 2–7.</div>
+      <div class="cita">Golub, G. H., &amp; Van Loan, C. F. (2013). <em>Matrix Computations</em> (4th ed.).
+      Johns Hopkins University Press.</div>
+      <div class="cita">Saad, Y. (2003). <em>Iterative Methods for Sparse Linear Systems</em> (2nd ed.). SIAM.</div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  OptiPrint-Finance · Desafío Académico de Métodos Numéricos · Universidad Mayor de San Andrés<br>
+  Aplicación del Método de Gradientes Conjugados Precondicionado en problemas financieros · Gestión 2025
+</footer>
+
+<script>
+/* =====================================================================
+   0. UTILIDADES NUMÉRICAS BÁSICAS
+   ===================================================================== */
+const N = 4;
+const ETQ  = ['x₁','x₂','x₃','x₄'];
+const NOMBRES = [
+  'Insumos de impresión',
+  'Logística y última milla',
+  'Infraestructura de pagos y plataforma',
+  'Marketing digital'
+];
+
+const clonar = M => M.map(r => r.slice());
+const matVec = (A,x) => A.map(fila => fila.reduce((s,a,j)=>s+a*x[j],0));
+const dot    = (a,b) => a.reduce((s,v,i)=>s+v*b[i],0);
+const norm2  = v => Math.sqrt(dot(v,v));
+const sub    = (a,b) => a.map((v,i)=>v-b[i]);
+const ident  = k => Array.from({length:k},(_,i)=>Array.from({length:k},(_,j)=>i===j?1:0));
+
+function fmt(v, d = 4){
+  if(!isFinite(v)) return '—';
+  if(v === 0) return '0';
+  const a = Math.abs(v);
+  if(a < 1e-3 || a >= 1e6) return v.toExponential(2);
+  return v.toFixed(d);
+}
+
+/* ---------- Cholesky ---------- */
+function cholesky(A){
+  const k = A.length;
+  const L = Array.from({length:k},()=>new Array(k).fill(0));
+  for(let i=0;i<k;i++){
+    for(let j=0;j<=i;j++){
+      let s = 0;
+      for(let p=0;p<j;p++) s += L[i][p]*L[j][p];
+      if(i === j){
+        const v = A[i][i] - s;
+        if(!(v > 0)) return null;
+        L[i][i] = Math.sqrt(v);
+      } else {
+        if(Math.abs(L[j][j]) < 1e-300) return null;
+        L[i][j] = (A[i][j] - s) / L[j][j];
+      }
+    }
+  }
+  return L;
+}
+function forwardSub(L,b){
+  const k = b.length, y = new Array(k).fill(0);
+  for(let i=0;i<k;i++){
+    let s = b[i];
+    for(let j=0;j<i;j++) s -= L[i][j]*y[j];
+    y[i] = s / L[i][i];
+  }
+  return y;
+}
+function backSub(U,b){
+  const k = b.length, x = new Array(k).fill(0);
+  for(let i=k-1;i>=0;i--){
+    let s = b[i];
+    for(let j=i+1;j<k;j++) s -= U[i][j]*x[j];
+    x[i] = s / U[i][i];
+  }
+  return x;
+}
+function cholSolve(L,b){
+  const y = forwardSub(L,b);
+  const Lt = Array.from({length:L.length},(_,i)=>L.map(r=>r[i]));
+  return backSub(Lt,y);
+}
+
+/* ---------- Autovalores (rotaciones de Jacobi) ---------- */
+function jacobiEigen(Ain){
+  const k = Ain.length;
+  let A = clonar(Ain);
+  for(let barrido=0; barrido<80; barrido++){
+    let off = 0;
+    for(let i=0;i<k;i++) for(let j=i+1;j<k;j++) off += A[i][j]*A[i][j];
+    if(off < 1e-26) break;
+    for(let p=0;p<k-1;p++){
+      for(let q=p+1;q<k;q++){
+        if(Math.abs(A[p][q]) < 1e-18) continue;
+        const theta = (A[q][q]-A[p][p]) / (2*A[p][q]);
+        const t = (theta >= 0 ? 1 : -1) / (Math.abs(theta) + Math.sqrt(theta*theta + 1));
+        const c = 1/Math.sqrt(t*t + 1), s = t*c;
+        for(let m=0;m<k;m++){
+          const amp = A[m][p], amq = A[m][q];
+          A[m][p] = c*amp - s*amq;
+          A[m][q] = s*amp + c*amq;
+        }
+        for(let m=0;m<k;m++){
+          const apm = A[p][m], aqm = A[q][m];
+          A[p][m] = c*apm - s*aqm;
+          A[q][m] = s*apm + c*aqm;
+        }
+      }
+    }
+  }
+  return A.map((r,i)=>r[i]);
+}
+function numeroCondicion(A){
+  const ev = jacobiEigen(A).map(Math.abs);
+  const mx = Math.max(...ev), mn = Math.min(...ev);
+  return (mn > 1e-14) ? mx/mn : Infinity;
+}
+
+/* ---------- Determinante (para menores de Sylvester) ---------- */
+function determinante(M){
+  const k = M.length, a = clonar(M);
+  let d = 1;
+  for(let i=0;i<k;i++){
+    let p = i;
+    for(let r=i+1;r<k;r++) if(Math.abs(a[r][i]) > Math.abs(a[p][i])) p = r;
+    if(Math.abs(a[p][i]) < 1e-14) return 0;
+    if(p !== i){ const tmp = a[i]; a[i] = a[p]; a[p] = tmp; d = -d; }
+    d *= a[i][i];
+    for(let r=i+1;r<k;r++){
+      const f = a[r][i]/a[i][i];
+      for(let c=i;c<k;c++) a[r][c] -= f*a[i][c];
+    }
+  }
+  return d;
+}
+
+/* =====================================================================
+   1. ESCENARIOS FINANCIEROS
+   ===================================================================== */
+const ESC = {
+  ideal: {
+    nombre: 'Ideal',
+    A: [[10.0, 1.2, 0.8, 0.6],
+        [ 1.2, 8.5, 0.9, 0.7],
+        [ 0.8, 0.9, 6.4, 0.5],
+        [ 0.6, 0.7, 0.5, 5.2]],
+    b: [516.0, 357.5, 208.2, 153.5],
+    precond: 'jacobi'
+  },
+  estres: {
+    nombre: 'Bajo estrés',
+    A: [[14.0, 1.8, 1.1, 0.9],
+        [ 1.8, 11.0, 1.3, 1.0],
+        [ 1.1, 1.3, 8.6, 0.8],
+        [ 0.9, 1.0, 0.8, 7.4]],
+    b: [430.0, 300.0, 180.0, 130.0],
+    precond: 'jacobi'
+  },
+  mal: {
+    nombre: 'Mal condicionado',
+    A: [[  1.0,  19.0,   0.9,  17.0],
+        [ 19.0, 400.0,  19.0, 360.0],
+        [  0.9,  19.0,   1.0,  19.0],
+        [ 17.0, 360.0,  19.0, 400.0]],
+    b: [144.7, 2970.0, 147.3, 2878.0],
+    precond: 'ic0'
+  }
+};
+
+/* =====================================================================
+   2. VALIDACIÓN DE LA MATRIZ
+   ===================================================================== */
+function validarMatriz(A){
+  const k = A.length;
+  for(let i=0;i<k;i++)
+    for(let j=0;j<k;j++)
+      if(!isFinite(A[i][j])) return {ok:false, motivo:'Hay coeficientes no numéricos o vacíos en la matriz A.'};
+
+  let maxAsim = 0, escala = 1;
+  for(let i=0;i<k;i++)
+    for(let j=0;j<k;j++){
+      maxAsim = Math.max(maxAsim, Math.abs(A[i][j]-A[j][i]));
+      escala  = Math.max(escala, Math.abs(A[i][j]));
+    }
+  if(maxAsim > 1e-9*escala)
+    return {ok:false,
+      motivo:'La matriz A no es simétrica: máx |aᵢⱼ − aⱼᵢ| = ' + maxAsim.toExponential(3) +
+             '. El método de Gradientes Conjugados Precondicionado exige A = Aᵀ.'};
+
+  const L = cholesky(A);
+  if(!L)
+    return {ok:false,
+      motivo:'La matriz A es simétrica pero no es definida positiva (la factorización de Cholesky falla porque algún pivote resulta ≤ 0). Revisa los coeficientes.'};
+
+  return {ok:true, L, maxAsim};
+}
+
+/* =====================================================================
+   3. PRECONDICIONADORES
+   ===================================================================== */
+function construirPrecondicionador(A, tipo, omega){
+  const k = A.length;
+  const D = A.map((r,i)=>r[i]);
+
+  if(tipo === 'jacobi'){
+    const Lm = Array.from({length:k},(_,i)=>Array.from({length:k},(_,j)=> i===j ? Math.sqrt(D[i]) : 0));
+    return {
+      nombre: 'Jacobi (diagonal)',
+      Lm,
+      aplicar: r => r.map((v,i)=> v / D[i])
+    };
+  }
+
+  if(tipo === 'ssor'){
+    const w = Math.min(Math.max(omega || 1, 0.1), 1.95);
+    const c = Math.sqrt(w*(2-w));
+    const Lm = Array.from({length:k},(_,i)=>Array.from({length:k},(_,j)=>{
+      if(j > i) return 0;
+      const base = (i===j) ? D[i] : w*A[i][j];
+      return base / (Math.sqrt(D[j]) * c);
+    }));
+    const aplicar = r => {
+      const rhs = r.map(v => w*(2-w)*v);
+      const u = new Array(k).fill(0);
+      for(let i=0;i<k;i++){
+        let s = rhs[i];
+        for(let j=0;j<i;j++) s -= w*A[i][j]*u[j];
+        u[i] = s / D[i];
+      }
+      const v = u.map((val,i)=> D[i]*val);
+      const z = new Array(k).fill(0);
+      for(let i=k-1;i>=0;i--){
+        let s = v[i];
+        for(let j=i+1;j<k;j++) s -= w*A[i][j]*z[j];
+        z[i] = s / D[i];
+      }
+      return z;
+    };
+    return {nombre:'SSOR (ω = '+w.toFixed(2)+')', Lm, aplicar};
+  }
+
+  // IC(0) — para n=4 con patrón denso coincide con Cholesky completo
+  const L = Array.from({length:k},()=>new Array(k).fill(0));
+  for(let i=0;i<k;i++){
+    for(let j=0;j<=i;j++){
+      let s = A[i][j];
+      for(let p=0;p<j;p++) s -= L[i][p]*L[j][p];
+      if(i === j) L[i][i] = Math.sqrt(Math.max(s, 1e-14));
+      else L[i][j] = s / L[j][j];
+    }
+  }
+  return {
+    nombre: 'Cholesky Incompleto IC(0)',
+    Lm: L,
+    aplicar: r => cholSolve(L, r)
+  };
+}
+
+/* κ(M⁻¹A) = κ(M^(-1/2) A M^(-1/2)) */
+function sistemaPrecondicionado(Lm, A){
+  const k = A.length;
+  const Y = Array.from({length:k},()=>new Array(k).fill(0));
+  for(let c=0;c<k;c++){
+    const col = A.map(r => r[c]);
+    const y = forwardSub(Lm, col);
+    for(let i=0;i<k;i++) Y[i][c] = y[i];
+  }
+  const Z = Array.from({length:k},()=>new Array(k).fill(0));
+  for(let c=0;c<k;c++){
+    const z = forwardSub(Lm, Y[c]);
+    for(let i=0;i<k;i++) Z[i][c] = z[i];
+  }
+  return Array.from({length:k},(_,i)=>Array.from({length:k},(_,j)=> Z[j][i]));
+}
+
+/* =====================================================================
+   4. GRADIENTES CONJUGADOS (con o sin precondicionador)
+   ===================================================================== */
+function gradientesConjugados(A, b, x0, tol, nmax, aplicarM){
+  const k = b.length;
+  let x = x0.slice();
+  let r = sub(b, matVec(A, x));
+  const bn = norm2(b) || 1;
+  let z = aplicarM ? aplicarM(r) : r.slice();
+  let p = z.slice();
+  let rz = dot(r, z);
+  const hist = [norm2(r)/bn];
+  let it = 0;
+
+  while(it < nmax){
+    const Ap = matVec(A, p);
+    const den = dot(p, Ap);
+    if(Math.abs(den) < 1e-300) break;
+    const alfa = rz / den;
+    for(let i=0;i<k;i++){ x[i] += alfa*p[i]; r[i] -= alfa*Ap[i]; }
+    it++;
+    const rel = norm2(r)/bn;
+    hist.push(rel);
+    if(rel < tol) break;
+    z = aplicarM ? aplicarM(r) : r.slice();
+    const rzN = dot(r, z);
+    if(Math.abs(rz) < 1e-300) break;
+    const beta = rzN / rz;
+    rz = rzN;
+    for(let i=0;i<k;i++) p[i] = z[i] + beta*p[i];
+  }
+  return {x, it, hist, rel: norm2(r)/bn};
+}
+
+/* =====================================================================
+   5. ESTADO Y DOM
+   ===================================================================== */
+const state = {
+  A: clonar(ESC.ideal.A),
+  b: ESC.ideal.b.slice(),
+  x0: [0,0,0,0],
+  tol: 1e-6,
+  nmax: 200,
+  precond: 'jacobi',
+  omega: 1,
+  escenario: 'ideal'
+};
+
+const $ = id => document.getElementById(id);
+let ultimo = null;
+let redibujar = [];
+
+/* ---------- Construcción de las rejillas de entrada ---------- */
+function construirRejillas(){
+  const gA = $('gridA');
+  gA.innerHTML = '<div></div>' + ETQ.map(e=>'<div class="cab">'+e+'</div>').join('');
+  for(let i=0;i<N;i++){
+    const rot = document.createElement('div');
+    rot.className = 'rot';
+    rot.textContent = 'Ec. ' + (i+1);
+    gA.appendChild(rot);
+    for(let j=0;j<N;j++){
+      const inp = document.createElement('input');
+      inp.type = 'number'; inp.step = 'any'; inp.className = 'campo';
+      inp.dataset.i = i; inp.dataset.j = j;
+      inp.addEventListener('input', e=>{
+        state.A[i][j] = parseFloat(e.target.value);
+        actualizarVerificacion();
+      });
+      gA.appendChild(inp);
+    }
+  }
+
+  const gb = $('gridb');
+  gb.innerHTML = '<div></div>' + ETQ.map(e=>'<div class="cab">'+e+'</div>').join('');
+  gb.insertAdjacentHTML('beforeend','<div class="rot">b</div>');
+  for(let i=0;i<N;i++){
+    const inp = document.createElement('input');
+    inp.type = 'number'; inp.step = 'any'; inp.className = 'campo';
+    inp.dataset.b = i;
+    inp.addEventListener('input', e=>{ state.b[i] = parseFloat(e.target.value); });
+    gb.appendChild(inp);
+  }
+
+  const gx = $('gridx0');
+  gx.innerHTML = '<div></div>' + ETQ.map(e=>'<div class="cab">'+e+'</div>').join('');
+  gx.insertAdjacentHTML('beforeend','<div class="rot">x₀</div>');
+  for(let i=0;i<N;i++){
+    const inp = document.createElement('input');
+    inp.type = 'number'; inp.step = 'any'; inp.className = 'campo';
+    inp.dataset.x0 = i;
+    inp.addEventListener('input', e=>{ state.x0[i] = parseFloat(e.target.value) || 0; });
+    gx.appendChild(inp);
+  }
+}
+
+function sincronizarRejillas(){
+  document.querySelectorAll('#gridA input').forEach(inp=>{
+    inp.value = state.A[+inp.dataset.i][+inp.dataset.j];
+  });
+  document.querySelectorAll('#gridb input').forEach(inp=>{
+    inp.value = state.b[+inp.dataset.b];
+  });
+  document.querySelectorAll('#gridx0 input').forEach(inp=>{
+    inp.value = state.x0[+inp.dataset.x0];
+  });
+  $('inpTol').value  = state.tol;
+  $('inpNmax').value = state.nmax;
+  $('selPrecond').value = state.precond;
+  $('inpOmega').value = state.omega;
+}
+
+/* ---------- Renderizadores de matrices / vectores ---------- */
+function htmlMatriz(M, filas, cols){
+  let s = '<div class="vec"><table class="mat"><tr><th></th>';
+  cols.forEach(c => s += '<th>'+c+'</th>');
+  s += '</tr>';
+  M.forEach((fila,i)=>{
+    s += '<tr><th>'+filas[i]+'</th>';
+    fila.forEach(v => s += '<td>'+fmt(v,4)+'</td>');
+    s += '</tr>';
+  });
+  s += '</table></div>';
+  return s;
+}
+function htmlVector(v, etiquetas){
+  let s = '<div class="vec"><table class="mat">';
+  for(let i=0;i<v.length;i++)
+    s += '<tr><th>'+etiquetas[i]+'</th><td>'+fmt(v[i],6)+'</td></tr>';
+  s += '</table></div>';
+  return s;
+}
+
+/* ---------- Verificación en vivo (simetría / Sylvester / autovalores) ---------- */
+function actualizarVerificacion(){
+  const A = state.A;
+  const caja = $('verificacion');
+  if(!caja) return;
+
+  if(A.flat().some(v => !isFinite(v))){
+    caja.innerHTML = '<p style="color:#A03A60">Completa todos los coeficientes de A para ejecutar la verificación.</p>';
+    return;
+  }
+
+  let maxAsim = 0;
+  for(let i=0;i<N;i++) for(let j=0;j<N;j++) maxAsim = Math.max(maxAsim, Math.abs(A[i][j]-A[j][i]));
+
+  const menores = [];
+  for(let k=1;k<=N;k++){
+    const sub2 = Array.from({length:k},(_,i)=>Array.from({length:k},(_,j)=>A[i][j]));
+    menores.push(determinante(sub2));
+  }
+  const ev = jacobiEigen(A);
+  const L = cholesky(A);
+
+  const simOK  = maxAsim < 1e-9 * Math.max(1, ...A.flat().map(Math.abs));
+  const silOK  = menores.every(m => m > 0);
+  const evOK   = ev.every(v => v > 1e-12);
+  const cholOK = !!L;
+
+  caja.innerHTML =
+    '<table class="tab" style="min-width:auto">'+
+      '<thead><tr><th>Verificación</th><th>Resultado</th><th>Estado</th></tr></thead>'+
+      '<tbody>'+
+      '<tr><td>Simetría: máx |aᵢⱼ − aⱼᵢ|</td><td class="num-celda">'+maxAsim.toExponential(3)+'</td>'+
+        '<td><span class="badge '+(simOK?'ok':'no')+'">'+(simOK?'A = Aᵀ ✔':'No simétrica ✘')+'</span></td></tr>'+
+      '<tr><td>Menores principales (Sylvester)</td><td class="num-celda">'+
+        menores.map(m=>fmt(m,3)).join(' , ')+'</td>'+
+        '<td><span class="badge '+(silOK?'ok':'no')+'">'+(silOK?'Todos > 0 ✔':'Falla ✘')+'</span></td></tr>'+
+      '<tr><td>Autovalores λᵢ(A)</td><td class="num-celda">'+
+        ev.map(v=>fmt(v,3)).join(' , ')+'</td>'+
+        '<td><span class="badge '+(evOK?'ok':'no')+'">'+(evOK?'Todos > 0 ✔':'Falla ✘')+'</span></td></tr>'+
+      '<tr><td>Factorización de Cholesky</td><td class="num-celda">'+
+        (cholOK?'A = LLᵀ obtenida':'Pivote ≤ 0')+'</td>'+
+        '<td><span class="badge '+(cholOK?'ok':'no')+'">'+(cholOK?'Definida positiva ✔':'No definida positiva ✘')+'</span></td></tr>'+
+      '<tr><td>Número de condición κ(A)</td><td class="num-celda">'+fmt(numeroCondicion(A),3)+'</td>'+
+        '<td><span class="badge info">'+(numeroCondicion(A)>1e3?'Mal condicionada':'Bien condicionada')+'</span></td></tr>'+
+      '</tbody></table>';
+}
+
+/* =====================================================================
+   6. GRÁFICOS (canvas propio)
+   ===================================================================== */
+function prepararCanvas(cv){
+  const dpr = window.devicePixelRatio || 1;
+  const rect = cv.getBoundingClientRect();
+  const w = Math.max(rect.width, 240);
+  const h = Math.max(rect.height, 160);
+  cv.width  = Math.round(w*dpr);
+  cv.height = Math.round(h*dpr);
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,w,h);
+  return {ctx, w, h};
+}
+
+function graficoLineas(cv, series, opts){
+  const {ctx, w, h} = prepararCanvas(cv);
+  const pad = {l:64, r:22, t:34, b:44};
+  const pw = w - pad.l - pad.r, ph = h - pad.t - pad.b;
+  if(pw <= 10 || ph <= 10) return;
+
+  let maxX = 1;
+  series.forEach(s => s.pts.forEach(p => maxX = Math.max(maxX, p.x)));
+  maxX = Math.max(maxX, 1);
+
+  let lo = Infinity, hi = -Infinity;
+  series.forEach(s => s.pts.forEach(p => {
+    const L = Math.log10(Math.max(p.y, 1e-16));
+    lo = Math.min(lo, L); hi = Math.max(hi, L);
+  }));
+  if(opts.lineaTol != null){
+    const L = Math.log10(opts.lineaTol);
+    lo = Math.min(lo, L); hi = Math.max(hi, L);
+  }
+  lo = Math.floor(lo); hi = Math.ceil(hi);
+  if(hi - lo < 2) hi = lo + 2;
+
+  const X = x => pad.l + (x/maxX)*pw;
+  const Y = v => pad.t + ph - ((Math.log10(Math.max(v,1e-16)) - lo)/(hi - lo))*ph;
+
+  ctx.font = '11px Inter, sans-serif';
+  ctx.textBaseline = 'middle';
+
+  // rejilla horizontal
+  for(let k=lo;k<=hi;k++){
+    const y = pad.t + ph - ((k-lo)/(hi-lo))*ph;
+    ctx.strokeStyle = '#EFF5F9';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l+pw, y); ctx.stroke();
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#93A5B2';
+    ctx.fillText('1e'+k, pad.l-10, y);
+  }
+  // eje X
+  const pasoX = Math.max(1, Math.ceil(maxX/10));
+  for(let x=0;x<=maxX;x+=pasoX){
+    const px = X(x);
+    ctx.strokeStyle = '#F4F9FC';
+    ctx.beginPath(); ctx.moveTo(px, pad.t); ctx.lineTo(px, pad.t+ph); ctx.stroke();
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#93A5B2';
+    ctx.fillText(x, px, pad.t+ph+16);
+  }
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#7B8C99';
+  ctx.font = '11.5px Inter, sans-serif';
+  ctx.fillText('Iteración k', pad.l + pw/2, h-10);
+  ctx.save();
+  ctx.translate(15, pad.t + ph/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText('Residuo relativo ‖rₖ‖₂/‖b‖₂', 0, 0);
+  ctx.restore();
+
+  // línea de tolerancia
+  if(opts.lineaTol != null){
+    const y = Y(opts.lineaTol);
+    ctx.strokeStyle = '#A7DAEE';
+    ctx.setLineDash([6,6]);
+    ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l+pw, y); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#4FA9CC';
+    ctx.textAlign = 'left';
+    ctx.font = '10.5px Inter, sans-serif';
+    ctx.fillText('tol = ' + opts.lineaTol.toExponential(0), pad.l+6, y-10);
+  }
+
+  // series
+  series.forEach(s=>{
+    ctx.strokeStyle = s.color;
+    ctx.lineWidth = 2.6;
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    s.pts.forEach((p,i)=>{
+      const px = X(p.x), py = Y(p.y);
+      if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+    });
+    ctx.stroke();
+
+    s.pts.forEach(p=>{
+      const px = X(p.x), py = Y(p.y);
+      ctx.beginPath();
+      ctx.arc(px, py, 3.6, 0, Math.PI*2);
+      ctx.fillStyle = '#fff';
+      ctx.fill();
+      ctx.lineWidth = 2.2;
+      ctx.strokeStyle = s.color;
+      ctx.stroke();
+    });
+  });
+
+  // leyenda
+  let lx = pad.l + 4;
+  ctx.textAlign = 'left';
+  ctx.font = '600 11.5px Inter, sans-serif';
+  series.forEach(s=>{
+    ctx.fillStyle = s.color;
+    ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(lx, 10, 13, 13, 4) : ctx.rect(lx, 10, 13, 13);
+    ctx.fill();
+    ctx.fillStyle = '#5D7080';
+    ctx.fillText(s.name, lx + 19, 17);
+    lx += 19 + ctx.measureText(s.name).width + 22;
+  });
+}
+
+function graficoBarras(cv, categorias, series, opts){
+  const {ctx, w, h} = prepararCanvas(cv);
+  const pad = {l:66, r:20, t:40, b:52};
+  const pw = w - pad.l - pad.r, ph = h - pad.t - pad.b;
+  if(pw <= 10 || ph <= 10) return;
+
+  let maxV = 0;
+  series.forEach(s => s.vals.forEach(v => maxV = Math.max(maxV, v)));
+  if(maxV <= 0) maxV = 1;
+  maxV *= 1.22;
+
+  ctx.font = '11px Inter, sans-serif';
+  ctx.textBaseline = 'middle';
+
+  for(let i=0;i<=4;i++){
+    const y = pad.t + ph - (i/4)*ph;
+    ctx.strokeStyle = '#EFF5F9';
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l+pw, y); ctx.stroke();
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#93A5B2';
+    ctx.fillText(opts.fmtY ? opts.fmtY(maxV*i/4) : (maxV*i/4).toFixed(1), pad.l-10, y);
+  }
+
+  const grupos = categorias.length;
+  const anchoG = pw/grupos;
+  const nb = series.length;
+  const anchoB = Math.min(44, (anchoG*0.66)/nb);
+
+  categorias.forEach((cat, gi)=>{
+    const centro = pad.l + anchoG*gi + anchoG/2;
+    series.forEach((s, si)=>{
+      const v = s.vals[gi] || 0;
+      const hb = (v/maxV)*ph;
+      const x = centro - (nb*anchoB)/2 + si*anchoB + 2;
+      const y = pad.t + ph - hb;
+      const grad = ctx.createLinearGradient(x, y, x, pad.t+ph);
+      grad.addColorStop(0, s.color);
+      grad.addColorStop(1, s.color2 || s.color);
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      if(ctx.roundRect) ctx.roundRect(x, y, anchoB-4, Math.max(hb,1), 6);
+      else ctx.rect(x, y, anchoB-4, Math.max(hb,1));
+      ctx.fill();
+
+      ctx.fillStyle = '#5D7080';
+      ctx.textAlign = 'center';
+      ctx.font = '600 10.5px Inter, sans-serif';
+      if(hb > 16) ctx.fillText(opts.fmtV ? opts.fmtV(v) : v.toFixed(2), x + (anchoB-4)/2, y-9);
+    });
+    ctx.fillStyle = '#7B8C99';
+    ctx.textAlign = 'center';
+    ctx.font = '600 11.5px Inter, sans-serif';
+    ctx.fillText(cat, centro, pad.t+ph+20);
+  });
+
+  let lx = pad.l;
+  ctx.textAlign = 'left';
+  ctx.font = '600 11.5px Inter, sans-serif';
+  series.forEach(s=>{
+    ctx.fillStyle = s.color;
+    ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(lx, 12, 13, 13, 4) : ctx.rect(lx, 12, 13, 13);
+    ctx.fill();
+    ctx.fillStyle = '#5D7080';
+    ctx.fillText(s.name, lx+19, 19);
+    lx += 19 + ctx.measureText(s.name).width + 24;
+  });
+}
+
+/* =====================================================================
+   7. RESOLUCIÓN PRINCIPAL
+   ===================================================================== */
+function mostrarAlerta(msg){
+  const a = $('alerta');
+  a.textContent = msg;
+  a.classList.add('visible');
+  $('okbox').classList.remove('visible');
+}
+function ocultarAlerta(){ $('alerta').classList.remove('visible'); }
+function mostrarOK(msg){
+  const o = $('okbox');
+  o.textContent = msg;
+  o.classList.add('visible');
+  $('alerta').classList.remove('visible');
+}
+
+function resolver(mostrarMensaje = true){
+  const val = validarMatriz(state.A);
+
+  if(!val.ok){
+    mostrarAlerta('⛔ ' + val.motivo);
+    return false;
+  }
+
+  const A = state.A, b = state.b;
+  const L = val.L;
+  const xref = cholSolve(L, b);
+  const residuoRef = norm2(sub(matVec(A, xref), b));
+  const residuoRefRel = residuoRef / (norm2(b) || 1);
+
+  const pre = construirPrecondicionador(A, state.precond, state.omega);
+
+  const t0 = performance.now();
+  const gc = gradientesConjugados(A, b, state.x0, state.tol, state.nmax, null);
+  const t1 = performance.now();
+  const gcp = gradientesConjugados(A, b, state.x0, state.tol, state.nmax, pre.aplicar);
+  const t2 = performance.now();
+
+  const kA  = numeroCondicion(A);
+  const kMA = numeroCondicion(sistemaPrecondicionado(pre.Lm, A));
+
+  const errores = xref.map((xr, i)=>{
+    const ea = Math.abs(xr - gcp.x[i]);
+    const er = (xr === 0) ? null : ea/Math.abs(xr);
+    return {ea, er, ep: er === null ? null : er*100};
+  });
+
+  const residuoGlobal = norm2(sub(matVec(A, gcp.x), b)) / (norm2(b) || 1);
+
+  ultimo = {
+    A: clonar(A), b: b.slice(), L, xref, residuoRef, residuoRefRel,
+    gc, gcp, pre, kA, kMA, errores, residuoGlobal,
+    tiempoGC: t1-t0, tiempoGCP: t2-t1
+  };
+
+  renderReferencia();
+  renderDiagnostico();
+  renderErrores();
+  renderCondicion();
+  actualizarVerificacion();
+  dibujarGraficos();
+
+  if(mostrarMensaje)
+    mostrarOK('✔ Sistema resuelto correctamente. La matriz es simétrica y definida positiva; ' +
+      'el precondicionador utilizado fue ' + pre.nombre + '.');
+
+  return true;
+}
+
+/* ---------- Render: solución de referencia ---------- */
+function renderReferencia(){
+  if(!ultimo) return;
+  const filas = ['1','2','3','4'];
+  $('resL').innerHTML = htmlMatriz(ultimo.L, filas, filas);
+  $('resXref').innerHTML = htmlVector(ultimo.xref, ETQ);
+  $('resResiduo').innerHTML =
+    '<div class="kpi celeste" style="max-width:280px">'+
+      '<span>Residuo ‖b − Ax_ref‖₂</span>'+
+      '<strong>'+ultimo.residuoRef.toExponential(3)+'</strong>'+
+      '<div style="font-size:.78rem;color:var(--tinta-3);margin-top:4px">'+
+        'Residuo relativo: '+ultimo.residuoRefRel.toExponential(3)+
+      '</div>'+
+    '</div>';
+}
+
+/* ---------- Render: diagnóstico GC vs GCP ---------- */
+function renderDiagnostico(){
+  if(!ultimo) return;
+  const {gc, gcp, pre, tiempoGC, tiempoGCP} = ultimo;
+  const converGC  = gc.rel  < state.tol;
+  const converGCP = gcp.rel < state.tol;
+  const ahorro = gc.it > 0 ? (100*(gc.it - gcp.it)/gc.it) : 0;
+
+  let html = '<div class="grid4" style="margin-bottom:18px">'+
+    '<div class="kpi rosa"><span>Iteraciones GC</span><strong>'+gc.it+'</strong></div>'+
+    '<div class="kpi celeste"><span>Iteraciones GCP</span><strong>'+gcp.it+'</strong></div>'+
+    '<div class="kpi"><span>Residuo final GC</span><strong>'+gc.rel.toExponential(2)+'</strong></div>'+
+    '<div class="kpi"><span>Residuo final GCP</span><strong>'+gcp.rel.toExponential(2)+'</strong></div>'+
+  '</div>';
+
+  html += '<div class="tabla-scroll"><table class="tab">'+
+    '<thead><tr><th>Indicador</th><th>GC simple (M = I)</th><th>GCP (M = '+pre.nombre+')</th></tr></thead><tbody>'+
+    '<tr><td>Número de iteraciones</td><td class="num-celda">'+gc.it+'</td><td class="num-celda">'+gcp.it+'</td></tr>'+
+    '<tr><td>Residuo relativo final</td><td class="num-celda">'+gc.rel.toExponential(3)+'</td><td class="num-celda">'+gcp.rel.toExponential(3)+'</td></tr>'+
+    '<tr><td>Tiempo de cómputo</td><td class="num-celda">'+tiempoGC.toFixed(3)+' ms</td><td class="num-celda">'+tiempoGCP.toFixed(3)+' ms</td></tr>'+
+    '<tr><td>¿Convergió con la tolerancia?</td><td><span class="badge '+(converGC?'ok':'no')+'">'+(converGC?'Sí':'No')+'</span></td>'+
+      '<td><span class="badge '+(converGCP?'ok':'no')+'">'+(converGCP?'Sí':'No')+'</span></td></tr>'+
+    '<tr><td>Vector aproximado</td><td>'+htmlVector(gc.x, ETQ)+'</td><td>'+htmlVector(gcp.x, ETQ)+'</td></tr>'+
+    '</tbody></table></div>';
+
+  html += '<p style="margin-top:14px;font-size:.9rem">'+
+    '<strong>Lectura del resultado:</strong> con el precondicionador <em>'+pre.nombre+'</em>, el GCP '+
+    (gc.it === gcp.it
+      ? 'empleó el mismo número de iteraciones que el GC simple, lo cual es esperable cuando la matriz ya está bien condicionada y el precondicionador no aporta una mejora significativa.'
+      : 'redujo el número de iteraciones de '+gc.it+' a '+gcp.it+
+        ' (una reducción del '+ahorro.toFixed(1)+'%), lo que confirma la ganancia en velocidad de convergencia que predice la teoría.')+
+    '</p>';
+
+  $('resDiagnostico').innerHTML = html;
+}
+
+/* ---------- Render: tabla de errores ---------- */
+function renderErrores(){
+  if(!ultimo) return;
+  const {xref, gcp, errores, residuoGlobal} = ultimo;
+
+  let html = '<div class="tabla-scroll"><table class="tab">'+
+    '<thead><tr><th>Variable</th><th>Rubro</th><th>x_ref</th><th>x_GCP</th>'+
+    '<th>Ea (abs.)</th><th>Er (rel.)</th><th>Ep (%)</th></tr></thead><tbody>';
+
+  for(let i=0;i<N;i++){
+    const e = errores[i];
+    html += '<tr>'+
+      '<td><b>'+ETQ[i]+'</b></td>'+
+      '<td>'+NOMBRES[i]+'</td>'+
+      '<td class="num-celda">'+fmt(xref[i],6)+'</td>'+
+      '<td class="num-celda">'+fmt(gcp.x[i],6)+'</td>'+
+      '<td class="num-celda">'+e.ea.toExponential(3)+'</td>'+
+      '<td class="num-celda">'+(e.er === null ? '<span class="badge no">No definido</span>' : e.er.toExponential(3))+'</td>'+
+      '<td class="num-celda">'+(e.ep === null ? '—' : e.ep.toExponential(3)+' %')+'</td>'+
+    '</tr>';
+  }
+  html += '</tbody></table></div>';
+
+  html += '<div class="grid2" style="margin-top:18px">'+
+    '<div class="kpi celeste"><span>Residuo relativo global ‖b − Ax_GCP‖₂/‖b‖₂</span>'+
+      '<strong>'+residuoGlobal.toExponential(3)+'</strong></div>'+
+    '<div class="kpi rosa"><span>Error máximo por componente (Ea)</span>'+
+      '<strong>'+Math.max(...errores.map(e=>e.ea)).toExponential(3)+'</strong></div>'+
+  '</div>';
+
+  $('tablaErrores').innerHTML = html;
+}
+
+/* ---------- Render: condicionamiento ---------- */
+function renderCondicion(){
+  if(!ultimo) return;
+  const {kA, kMA, pre} = ultimo;
+  const reduccion = kMA > 0 ? kA/kMA : Infinity;
+  $('resCondicion').innerHTML =
+    '<div class="grid3">'+
+      '<div class="kpi"><span>κ(A) original</span><strong>'+fmt(kA,3)+'</strong></div>'+
+      '<div class="kpi celeste"><span>κ(M⁻¹A) precondicionada</span><strong>'+fmt(kMA,3)+'</strong></div>'+
+      '<div class="kpi rosa"><span>Reducción κ(A)/κ(M⁻¹A)</span><strong>'+fmt(reduccion,2)+'×</strong></div>'+
+    '</div>'+
+    '<p style="margin-top:14px;font-size:.88rem;color:var(--tinta-2)">'+
+      'Precondicionador activo: <b>'+pre.nombre+'</b>. '+
+      (kMA < kA
+        ? 'El condicionamiento mejoró, por lo que se espera una convergencia más rápida del GCP frente al GC simple.'
+        : 'El condicionamiento no mejoró con este precondicionador; prueba con SSOR o IC(0).')+
+    '</p>';
+}
+
+/* ---------- Render: gráficos ---------- */
+function dibujarGraficos(){
+  redibujar = [];
+  if(!ultimo) return;
+
+  const cv1 = $('cvConvergencia');
+  const series1 = [
+    {name:'GC',  color:'#F28CB2', pts: ultimo.gc.hist.map((v,i)=>({x:i, y:Math.max(v,1e-16)}))},
+    {name:'GCP', color:'#4FA9CC', pts: ultimo.gcp.hist.map((v,i)=>({x:i, y:Math.max(v,1e-16)}))}
+  ];
+  graficoLineas(cv1, series1, {lineaTol: state.tol});
+  redibujar.push(()=>graficoLineas(cv1, series1, {lineaTol: state.tol}));
+
+  const cv2 = $('cvErrores');
+  const cats2 = ETQ;
+  const series2 = [{
+    name:'Ep (%)', color:'#F28CB2', color2:'#FFD7E5',
+    vals: ultimo.errores.map(e => e.ep === null ? 0 : Math.max(e.ep, 0))
+  }];
+  const opts2 = {fmtV: v => v === 0 ? '0' : v.toExponential(1)};
+  graficoBarras(cv2, cats2, series2, opts2);
+  redibujar.push(()=>graficoBarras(cv2, cats2, series2, opts2));
+
+  dibujarIteraciones();
+}
+
+function dibujarIteraciones(){
+  if(!window.__comparativa) return;
+  const cv = $('cvIteraciones');
+  const cats = ['Ideal', 'Bajo estrés', 'Mal condicionado'];
+  const series = [
+    {name:'GC',  color:'#F28CB2', color2:'#FFD7E5', vals: window.__comparativa.map(c=>c.itGC)},
+    {name:'GCP', color:'#4FA9CC', color2:'#CBEAF7', vals: window.__comparativa.map(c=>c.itGCP)}
+  ];
+  const opts = {fmtV: v => String(v)};
+  graficoBarras(cv, cats, series, opts);
+  redibujar.push(()=>graficoBarras(cv, cats, series, opts));
+}
+
+/* =====================================================================
+   8. TABLA COMPARATIVA DE LOS TRES ESCENARIOS
+   ===================================================================== */
+function calcularComparativa(){
+  const res = [];
+  ['ideal','estres','mal'].forEach(clave=>{
+    const esc = ESC[clave];
+    const L = cholesky(esc.A);
+    if(!L){ res.push(null); return; }
+    const xref = cholSolve(L, esc.b);
+    const pre = construirPrecondicionador(esc.A, esc.precond, 1);
+    const gc  = gradientesConjugados(esc.A, esc.b, [0,0,0,0], 1e-6, 300, null);
+    const gcp = gradientesConjugados(esc.A, esc.b, [0,0,0,0], 1e-6, 300, pre.aplicar);
+    const kA  = numeroCondicion(esc.A);
+    const kMA = numeroCondicion(sistemaPrecondicionado(pre.Lm, esc.A));
+    const ea  = xref.map((v,i)=>Math.abs(v - gcp.x[i]));
+    const ep  = xref.map((v,i)=> v === 0 ? null : (Math.abs(v-gcp.x[i])/Math.abs(v))*100);
+    const rg  = norm2(sub(matVec(esc.A, gcp.x), esc.b)) / (norm2(esc.b)||1);
+    res.push({clave, nombre:esc.nombre, pre, xref, gcp, gc, ea, ep, kA, kMA, rg});
+  });
+  window.__comparativa = res;
+  renderComparativa(res);
+}
+
+function renderComparativa(res){
+  const interpretaciones = {
+    ideal:'Escenario estable: el reparto presupuestario es equilibrado y poco sensible a perturbaciones. La matriz está bien condicionada y ambos métodos convergen en pocas iteraciones.',
+    estres:'La inflación de insumos y el alza logística reducen el presupuesto disponible en todos los rubros. El modelo redistribuye los recursos hacia las áreas con mayor eficiencia propia.',
+    mal:'El mal escalamiento produce κ(A) elevado: pequeñas variaciones en b generan cambios grandes en x. El precondicionador reduce el número de condición y estabiliza la solución.'
+  };
+
+  let html = '<div class="tabla-scroll"><table class="tab" style="min-width:820px">'+
+    '<thead><tr><th>Indicador</th><th>Escenario Ideal</th><th>Escenario Bajo Estrés</th><th>Escenario Mal Condicionado</th></tr></thead><tbody>';
+
+  // fila: solución de referencia
+  html += '<tr><td><b>Solución numérica de referencia</b></td>';
+  res.forEach(r=>{
+    html += '<td>'+(r ? '<div class="mini-lista">'+
+      r.xref.map((v,i)=>'<b>'+ETQ[i]+'</b> → '+fmt(v,4)).join('<br>')+'</div>' : '—')+'</td>';
+  });
+  html += '</tr>';
+
+  // fila: error absoluto
+  html += '<tr><td><b>Error absoluto (Ea) por variable</b></td>';
+  res.forEach(r=>{
+    html += '<td>'+(r ? '<div class="mini-lista">'+
+      r.ea.map((v,i)=>'<b>'+ETQ[i]+'</b> → '+v.toExponential(2)).join('<br>')+'</div>' : '—')+'</td>';
+  });
+  html += '</tr>';
+
+  // fila: error porcentual
+  html += '<tr><td><b>Error porcentual (Ep) por variable</b></td>';
+  res.forEach(r=>{
+    html += '<td>'+(r ? '<div class="mini-lista">'+
+      r.ep.map((v,i)=>'<b>'+ETQ[i]+'</b> → '+(v===null?'No definido':v.toExponential(2)+' %')).join('<br>')+
+      '</div>' : '—')+'</td>';
+  });
+  html += '</tr>';
+
+  const filas = [
+    ['Iteraciones GC (sin precondicionar)', r=>r.gc.it],
+    ['Iteraciones GCP (precondicionado)', r=>r.gcp.it],
+    ['Precondicionador utilizado', r=>r.pre.nombre],
+    ['Número de condición κ(A)', r=>fmt(r.kA,3)],
+    ['Número de condición κ(M⁻¹A)', r=>fmt(r.kMA,3)],
+    ['Residuo relativo final GCP', r=>r.rg.toExponential(3)],
+    ['¿Convergió el algoritmo?', r=>'<span class="badge '+(r.gcp.rel<1e-6?'ok':'no')+'">'+(r.gcp.rel<1e-6?'Sí':'No')+'</span>']
+  ];
+  filas.forEach(([titulo, fn])=>{
+    html += '<tr><td><b>'+titulo+'</b></td>';
+    res.forEach(r=>{ html += '<td class="num-celda">'+(r?fn(r):'—')+'</td>'; });
+    html += '</tr>';
+  });
+
+  html += '<tr><td><b>Interpretación financiera</b></td>';
+  res.forEach(r=>{
+    html += '<td style="font-size:.82rem;color:var(--tinta-2)">'+(r?interpretaciones[r.clave]:'—')+'</td>';
+  });
+  html += '</tr>';
+
+  html += '</tbody></table></div>';
+  $('tablaComparativa').innerHTML = html;
+}
+
+/* =====================================================================
+   9. MÓDULO QA
+   ===================================================================== */
+function ejecutarQA(){
+  const pruebas = [];
+
+  /* --- QA-01: carga de escenarios --- */
+  let ok1 = true, detalle1 = [];
+  ['ideal','estres','mal'].forEach(k=>{
+    try{
+      const e = ESC[k];
+      const L = cholesky(e.A);
+      if(!L){ ok1 = false; detalle1.push(k+': Cholesky falló'); return; }
+      const x = cholSolve(L, e.b);
+      const rr = norm2(sub(matVec(e.A,x), e.b)) / (norm2(e.b)||1);
+      if(!(rr < 1e-8)){ ok1 = false; detalle1.push(k+': residuo '+rr.toExponential(2)); }
+    }catch(err){ ok1 = false; detalle1.push(k+': excepción'); }
+  });
+  pruebas.push({
+    id:'QA-01',
+    nombre:'Carga de escenarios',
+    entrada:'Ejecución de los escenarios Ideal, Bajo Estrés y Mal Condicionado.',
+    esperado:'Los tres escenarios se resuelven sin excepciones y con residuo relativo menor a 10⁻⁸.',
+    obtenido: ok1 ? 'Los 3 escenarios resolvieron con residuo relativo < 1e-8.' : 'Falló: ' + detalle1.join('; '),
+    ok: ok1
+  });
+
+  /* --- QA-02: matriz no válida --- */
+  const A_nosim = [[1,2,3,4],[2,1,2,3],[3,2,1,2],[4,3,2,1]];           // simétrica pero no DP
+  const A_asim  = [[1,2,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]];           // no simétrica
+  const vAsim = validarMatriz(A_asim);
+  const vIndef = validarMatriz(A_nosim);
+  const ok2 = (!vAsim.ok) && (!vIndef.ok);
+  pruebas.push({
+    id:'QA-02',
+    nombre:'Validación de matriz no válida',
+    entrada:'(a) Matriz no simétrica; (b) matriz simétrica pero no definida positiva.',
+    esperado:'El sistema captura el error y notifica al usuario sin colapsar ni ejecutar el algoritmo.',
+    obtenido: ok2
+      ? '(a) rechazada por simetría: "' + vAsim.motivo.slice(0,52) + '…"; (b) rechazada por Cholesky: "' + vIndef.motivo.slice(0,52) + '…".'
+      : 'No se detectó correctamente alguno de los casos inválidos.',
+    ok: ok2
+  });
+
+  /* --- QA-03: edición dinámica --- */
+  let ok3 = false, det3 = '';
+  try{
+    const A1 = clonar(ESC.ideal.A), b1 = ESC.ideal.b.slice();
+    const L1 = cholesky(A1); const x1 = cholSolve(L1, b1);
+    const A2 = clonar(A1); A2[0][0] += 2.0; A2[1][1] += 1.0;   // se mantiene simétrica y DP
+    const L2 = cholesky(A2); const x2 = cholSolve(L2, b1);
+    const cambio = Math.max(...x1.map((v,i)=>Math.abs(v-x2[i])));
+    const rr2 = norm2(sub(matVec(A2,x2), b1)) / (norm2(b1)||1);
+    ok3 = cambio > 1e-6 && rr2 < 1e-9;
+    det3 = 'Al modificar a₁₁ y a₂₂ la solución de referencia cambió en ' + cambio.toFixed(4) +
+           ' unidades y el nuevo residuo relativo fue ' + rr2.toExponential(2) + '.';
+  }catch(err){ det3 = 'Excepción durante la prueba.'; }
+  pruebas.push({
+    id:'QA-03',
+    nombre:'Edición dinámica de coeficientes',
+    entrada:'Modificación manual de a₁₁ (+2.0) y a₂₂ (+1.0) manteniendo la simetría.',
+    esperado:'Recálculo instantáneo de la solución de referencia, del GCP y de los errores, con residuo pequeño.',
+    obtenido: det3,
+    ok: ok3
+  });
+
+  /* --- QA-04: comparativa de precondicionamiento --- */
+  let ok4 = false, det4 = '';
+  try{
+    const e = ESC.mal;
+    const preJ = construirPrecondicionador(e.A, 'jacobi', 1);
+    const preI = construirPrecondicionador(e.A, 'ic0', 1);
+    const gc  = gradientesConjugados(e.A, e.b, [0,0,0,0], 1e-6, 300, null);
+    const gcpJ = gradientesConjugados(e.A, e.b, [0,0,0,0], 1e-6, 300, preJ.aplicar);
+    const gcpI = gradientesConjugados(e.A, e.b, [0,0,0,0], 1e-6, 300, preI.aplicar);
+    const kA = numeroCondicion(e.A);
+    const kJ = numeroCondicion(sistemaPrecondicionado(preJ.Lm, e.A));
+    const kI = numeroCondicion(sistemaPrecondicionado(preI.Lm, e.A));
+    ok4 = (gcpJ.it <= gc.it) && (gcpI.it <= gc.it) && (kJ < kA) && (kI < kA);
+    det4 = 'GC: ' + gc.it + ' iteraciones (κ = ' + kA.toFixed(1) + '). ' +
+           'GCP-Jacobi: ' + gcpJ.it + ' iteraciones (κ = ' + kJ.toFixed(2) + '). ' +
+           'GCP-IC(0): ' + gcpI.it + ' iteraciones (κ = ' + kI.toFixed(2) + ').';
+  }catch(err){ det4 = 'Excepción durante la prueba.'; }
+  pruebas.push({
+    id:'QA-04',
+    nombre:'Comparativa de precondicionamiento',
+    entrada:'Escenario Mal Condicionado resuelto con GC, GCP-Jacobi y GCP-IC(0).',
+    esperado:'El GCP alcanza la tolerancia en igual o menor número de iteraciones que el GC y reduce κ(M⁻¹A) frente a κ(A).',
+    obtenido: det4,
+    ok: ok4
+  });
+
+  /* --- Render de la tabla --- */
+  let html = '<div class="tabla-scroll"><table class="tab" style="min-width:900px">'+
+    '<thead><tr><th>ID</th><th>Caso de prueba</th><th>Entrada</th><th>Resultado esperado</th>'+
+    '<th>Resultado obtenido</th><th>Conclusión</th></tr></thead><tbody>';
+  pruebas.forEach(p=>{
+    html += '<tr>'+
+      '<td><b>'+p.id+'</b></td>'+
+      '<td>'+p.nombre+'</td>'+
+      '<td style="font-size:.82rem;color:var(--tinta-2)">'+p.entrada+'</td>'+
+      '<td style="font-size:.82rem;color:var(--tinta-2)">'+p.esperado+'</td>'+
+      '<td style="font-size:.82rem">'+p.obtenido+'</td>'+
+      '<td><span class="badge '+(p.ok?'ok':'no')+'">'+(p.ok?'APROBADO':'FALLIDO')+'</span></td>'+
+    '</tr>';
+  });
+  html += '</tbody></table></div>';
+  $('tablaQA').innerHTML = html;
+}
+
+/* =====================================================================
+   10. CARGA DE ESCENARIOS Y EVENTOS
+   ===================================================================== */
+function cargarEscenario(clave, resolverDespues = true){
+  const e = ESC[clave];
+  state.A = clonar(e.A);
+  state.b = e.b.slice();
+  state.x0 = [0,0,0,0];
+  state.precond = e.precond;
+  state.escenario = clave;
+  sincronizarRejillas();
+  actualizarVerificacion();
+  if(resolverDespues) resolver();
+}
+
+function leerControles(){
+  const tol = parseFloat($('inpTol').value);
+  state.tol = (isFinite(tol) && tol > 0) ? tol : 1e-6;
+  const nm = parseInt($('inpNmax').value, 10);
+  state.nmax = (isFinite(nm) && nm > 0) ? nm : 200;
+  state.precond = $('selPrecond').value;
+  const w = parseFloat($('inpOmega').value);
+  state.omega = (isFinite(w) && w > 0 && w < 2) ? w : 1;
+}
+
+function iniciar(){
+  construirRejillas();
+  sincronizarRejillas();
+
+  $('btnResolver').addEventListener('click', ()=>{
+    leerControles();
+    resolver();
+  });
+  $('btnIdeal').addEventListener('click', ()=>cargarEscenario('ideal'));
+  $('btnEstres').addEventListener('click', ()=>cargarEscenario('estres'));
+  $('btnMal').addEventListener('click', ()=>cargarEscenario('mal'));
+  $('btnReset').addEventListener('click', ()=>{ cargarEscenario('ideal'); });
+  $('btnQA').addEventListener('click', ejecutarQA);
+
+  document.querySelectorAll('[data-esc]').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const clave = b.dataset.esc;
+      cargarEscenario(clave);
+      document.getElementById('panel').scrollIntoView({behavior:'smooth'});
+    });
+  });
+
+  $('selPrecond').addEventListener('change', ()=>{ leerControles(); resolver(); });
+  $('inpOmega').addEventListener('change', ()=>{ leerControles(); resolver(); });
+  $('inpTol').addEventListener('change', ()=>{ leerControles(); resolver(); });
+  $('inpNmax').addEventListener('change', ()=>{ leerControles(); resolver(); });
+
+  actualizarVerificacion();
+  cargarEscenario('ideal', true);
+  calcularComparativa();
+  ejecutarQA();
+
+  window.addEventListener('resize', ()=>{
+    clearTimeout(window.__rz);
+    window.__rz = setTimeout(()=>{ redibujar.forEach(f=>f()); }, 180);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', iniciar);
+
+window.addEventListener('load', ()=>{
+  setTimeout(()=>{
+    if(window.renderMathInElement){
+      renderMathInElement(document.body, {
+        delimiters:[
+          {left:'$$', right:'$$', display:true},
+          {left:'\\[', right:'\\]', display:true},
+          {left:'$',  right:'$',  display:false},
+          {left:'\\(', right:'\\)', display:false}
+        ],
+        throwOnError:false
+      });
+    }
+    redibujar.forEach(f=>f());
+  }, 260);
+});
+</script>
+</body>
+</html>
